@@ -27,24 +27,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	apiv1alpha1 "github.com/openmcp-project/service-provider-template/api/v1alpha1"
-	spruntime "github.com/openmcp-project/service-provider-template/pkg/runtime"
+	apiv1alpha1 "github.com/Skarlso/service-provider-ocm/api/v1alpha1"
+	spruntime "github.com/Skarlso/service-provider-ocm/pkg/runtime"
+	"github.com/openmcp-project/controller-utils/pkg/clusters"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// {{.Kind}}Reconciler reconciles a {{.Kind}} object
-type {{.Kind}}Reconciler struct {
-	// OnboardingCluster is the cluster where this controller watches {{.Kind}} resources and reacts to their changes.
+// OCMReconciler reconciles a OCM object
+type OCMReconciler struct {
+	// OnboardingCluster is the cluster where this controller watches OCM resources and reacts to their changes.
 	OnboardingCluster *clusters.Cluster
 	// PlatformCluster is the cluster where this controller is deployed and configured.
-	PlatformCluster   *clusters.Cluster
+	PlatformCluster *clusters.Cluster
 	// PodNamespace is the namespace where this controller is deployed in.
 	PodNamespace string
 }
 
 // CreateOrUpdate is called on every add or update event
-func (r *{{.Kind}}Reconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.{{.Kind}}, _ *apiv1alpha1.ProviderConfig, clusters spruntime.ClusterContext) (ctrl.Result, error) {
-{{- if .WithExample }}
+func (r *OCMReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.OCM, _ *apiv1alpha1.ProviderConfig, clusters spruntime.ClusterContext) (ctrl.Result, error) {
 	l := logf.FromContext(ctx)
 	spruntime.StatusProgressing(svcobj, "Reconciling", "Reconcile in progress")
 	managedObj := &apiextensionsv1.CustomResourceDefinition{
@@ -60,15 +60,11 @@ func (r *{{.Kind}}Reconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1a
 		return ctrl.Result{}, err
 	}
 	spruntime.StatusReady(svcobj)
-{{- else }}
-	// TODO
-{{- end }}
 	return ctrl.Result{}, nil
 }
 
 // Delete is called on every delete event
-func (r *{{.Kind}}Reconciler) Delete(ctx context.Context, obj *apiv1alpha1.{{.Kind}}, _ *apiv1alpha1.ProviderConfig, clusters spruntime.ClusterContext) (ctrl.Result, error) {
-{{- if .WithExample }}
+func (r *OCMReconciler) Delete(ctx context.Context, obj *apiv1alpha1.OCM, _ *apiv1alpha1.ProviderConfig, clusters spruntime.ClusterContext) (ctrl.Result, error) {
 	l := logf.FromContext(ctx)
 	spruntime.StatusTerminating(obj)
 	managedObj := fooCRD()
@@ -83,12 +79,8 @@ func (r *{{.Kind}}Reconciler) Delete(ctx context.Context, obj *apiv1alpha1.{{.Ki
 	return ctrl.Result{
 		RequeueAfter: time.Second * 10,
 	}, nil
-{{- else }}
-	// TODO
-	return ctrl.Result{}, nil
-{{- end }}
 }
-{{ if .WithExample }}
+
 func fooCRD() *apiextensionsv1.CustomResourceDefinition {
 	return &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -126,4 +118,3 @@ func fooCRD() *apiextensionsv1.CustomResourceDefinition {
 		},
 	}
 }
-{{- end }}

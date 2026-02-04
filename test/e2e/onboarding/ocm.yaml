@@ -1,6 +1,6 @@
 apiVersion: ocm.services.openmcp.cloud/v1alpha1
-kind: ProviderConfig
+kind: OCM
 metadata:
-  name: ocm
+  name: test-mcp
 spec:
-  pollInterval: 1m
+  foo: bar
