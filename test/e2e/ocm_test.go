@@ -21,7 +21,6 @@ import (
 )
 
 func TestServiceProvider(t *testing.T) {
-	// TODO: Install Flux.
 	var onboardingList unstructured.UnstructuredList
 	basicProviderTest := features.New("provider test").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
