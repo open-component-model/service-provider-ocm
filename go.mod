@@ -1,6 +1,6 @@
-module github.com/Skarlso/service-provider-ocm
+module github.com/open-component-model/service-provider-ocm
 
-go 1.25.4
+go 1.25.7
 
 require (
 	github.com/fluxcd/helm-controller/api v1.4.5
