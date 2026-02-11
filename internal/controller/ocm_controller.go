@@ -97,7 +97,7 @@ func (r *OCMReconciler) Delete(ctx context.Context, obj *apiv1alpha1.OCM, _ *api
 	}
 
 	var objects []client.Object
-	ociRepository := createOciRepository("oci://ghcr.io/open-component-model/charts/ocm-k8s-toolkit", "0.0.0-0a2b7a3", tenantNamespace)
+	ociRepository := createOciRepository(obj.Spec.URL, obj.Spec.Version, tenantNamespace)
 	objects = append(objects, ociRepository)
 	helmRelease, err := r.createHelmRelease(ctx, tenantNamespace, obj.Name)
 	if err != nil {
