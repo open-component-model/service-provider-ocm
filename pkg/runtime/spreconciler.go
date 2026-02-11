@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Skarlso/service-provider-ocm/api/v1alpha1"
+	"github.com/open-component-model/service-provider-ocm/api/v1alpha1"
 	"github.com/openmcp-project/controller-utils/pkg/clusters"
 	"github.com/openmcp-project/openmcp-operator/lib/clusteraccess"
 	"k8s.io/apimachinery/pkg/api/equality"

@@ -36,8 +36,8 @@ import (
 	"github.com/openmcp-project/controller-utils/pkg/clusters"
 	"github.com/openmcp-project/openmcp-operator/lib/clusteraccess"
 
-	apiv1alpha1 "github.com/Skarlso/service-provider-ocm/api/v1alpha1"
-	spruntime "github.com/Skarlso/service-provider-ocm/pkg/runtime"
+	apiv1alpha1 "github.com/open-component-model/service-provider-ocm/api/v1alpha1"
+	spruntime "github.com/open-component-model/service-provider-ocm/pkg/runtime"
 )
 
 const (

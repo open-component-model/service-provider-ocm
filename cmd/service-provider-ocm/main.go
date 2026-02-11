@@ -53,12 +53,12 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/Skarlso/service-provider-ocm/api/crds"
+	"github.com/open-component-model/service-provider-ocm/api/crds"
 
-	spruntime "github.com/Skarlso/service-provider-ocm/pkg/runtime"
+	spruntime "github.com/open-component-model/service-provider-ocm/pkg/runtime"
 
-	ocmsv1alpha1 "github.com/Skarlso/service-provider-ocm/api/v1alpha1"
-	"github.com/Skarlso/service-provider-ocm/internal/controller"
+	ocmsv1alpha1 "github.com/open-component-model/service-provider-ocm/api/v1alpha1"
+	"github.com/open-component-model/service-provider-ocm/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
