@@ -21,10 +21,10 @@ tasks:
     desc: "Build image for current platform and tag without suffix for testing"
     cmds:
       - task: build:img:build
-      - docker tag ghcr.io/open-component-model/images/{{.COMPONENTS}}:{{.VERSION}}-linux-{{ARCH}} ghcr.io/open-component-model/images/{{.COMPONENTS}}:{{.VERSION}}
+      - docker tag ${BASE_REGISTRY}/images/{{.COMPONENTS}}:{{.VERSION}}-linux-{{.ARCH}} ${BASE_REGISTRY}/images/{{.COMPONENTS}}:{{.VERSION}}
     vars:
       VERSION:
-        sh: cat VERSION
+        sh: hack/common/get-version.sh
       ARCH:
         sh: uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'
 
@@ -32,4 +32,7 @@ tasks:
     desc: "Build image and run e2e tests"
     cmds:
       - task: build:img:build-test
-      - go test -v ./test/e2e/... -count=1
+      - VERSION={{.VERSION}} go test -v ./test/e2e/... -count=1
+    vars:
+      VERSION:
+        sh: hack/common/get-version.sh
