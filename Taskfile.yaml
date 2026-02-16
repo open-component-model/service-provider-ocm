@@ -1,5 +1,8 @@
 version: 3
 
+env:
+  BASE_REGISTRY: ghcr.io/open-component-model
+
 vars:
   NESTED_MODULES: api
   API_DIRS: '{{.ROOT_DIR}}/api/v1alpha1/...'

@@ -9,9 +9,6 @@ on:
 permissions:
   packages: write
 
-env:
-  OCI_URL: ghcr.io/open-component-model
-
 jobs:
   release_tag:
     name: Release version
