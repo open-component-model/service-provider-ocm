@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,6 +33,9 @@ type ProviderConfigSpec struct {
 
 	// +optional
 	HelmConfig *HelmConfig `json:"helmConfig,omitempty"`
+
+	// +optional
+	ImagePullSecret *corev1.LocalObjectReference `json:"imagePullSecret,omitempty"`
 }
 
 // HelmConfig configures Helm install and upgrade behavior for managed HelmReleases.

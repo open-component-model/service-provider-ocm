@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
@@ -26,6 +27,7 @@ import (
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	clustersv1alpha1 "github.com/openmcp-project/openmcp-operator/api/clusters/v1alpha1"
 	libutils "github.com/openmcp-project/openmcp-operator/lib/utils"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,6 +72,11 @@ func (r *OCMReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.
 	}
 
 	l.Info("checking tenantNamespace", "namespace", tenantNamespace)
+
+	if err := r.replicateImagePullSecret(ctx, providerConfig, tenantNamespace); err != nil {
+		spruntime.StatusFailed(svcobj, err.Error())
+		return ctrl.Result{}, fmt.Errorf("failed to replicate image pull secret: %w", err)
+	}
 
 	if err := r.createOrUpdateOCIRepository(ctx, svcobj, clusters, tenantNamespace, providerConfig); err != nil {
 		spruntime.StatusFailed(svcobj, err.Error())
@@ -146,6 +153,37 @@ func (r *OCMReconciler) getMcpFluxConfig(ctx context.Context, namespace, objectN
 	}, nil
 }
 
+func (r *OCMReconciler) replicateImagePullSecret(ctx context.Context, providerConfig *apiv1alpha1.ProviderConfig, targetNamespace string) error {
+	if providerConfig == nil || providerConfig.Spec.ImagePullSecret == nil {
+		return nil
+	}
+
+	ref := providerConfig.Spec.ImagePullSecret
+	platformClient := r.PlatformCluster.Client()
+
+	sourceSecret := &corev1.Secret{}
+	sourceKey := client.ObjectKey{Name: ref.Name, Namespace: r.PodNamespace}
+	if err := platformClient.Get(ctx, sourceKey, sourceSecret); err != nil {
+		return fmt.Errorf("failed to get image pull secret %q from namespace %q: %w", ref.Name, r.PodNamespace, err)
+	}
+
+	targetSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ref.Name,
+			Namespace: targetNamespace,
+		},
+	}
+	if _, err := ctrl.CreateOrUpdate(ctx, platformClient, targetSecret, func() error {
+		targetSecret.Data = sourceSecret.Data
+		targetSecret.Type = sourceSecret.Type
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to replicate image pull secret %q to namespace %q: %w", ref.Name, targetNamespace, err)
+	}
+
+	return nil
+}
+
 func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, svcobj *apiv1alpha1.OCM, _ spruntime.ClusterContext, namespace string, providerConfig *apiv1alpha1.ProviderConfig) error {
 	ociRepository := createOciRepository(svcobj.Spec.URL, svcobj.Spec.Version, namespace, providerConfig)
 	managedObj := &sourcev1.OCIRepository{
@@ -189,10 +227,24 @@ func (r *OCMReconciler) createOrUpdateHelmRelease(ctx context.Context, namespace
 	return nil
 }
 
+func ensureOCIScheme(url string) string {
+	if !strings.HasPrefix(url, "oci://") {
+		return "oci://" + url
+	}
+	return url
+}
+
 func createOciRepository(url, version, namespace string, providerConfig *apiv1alpha1.ProviderConfig) *sourcev1.OCIRepository {
 	interval := metav1.Duration{Duration: time.Minute}
 	if providerConfig != nil && providerConfig.Spec.HelmConfig != nil && providerConfig.Spec.HelmConfig.Interval != nil {
 		interval = *providerConfig.Spec.HelmConfig.Interval
+	}
+
+	var secretRef *meta.LocalObjectReference
+	if providerConfig != nil && providerConfig.Spec.ImagePullSecret != nil {
+		secretRef = &meta.LocalObjectReference{
+			Name: providerConfig.Spec.ImagePullSecret.Name,
+		}
 	}
 
 	return &sourcev1.OCIRepository{
@@ -201,8 +253,9 @@ func createOciRepository(url, version, namespace string, providerConfig *apiv1al
 			Namespace: namespace,
 		},
 		Spec: sourcev1.OCIRepositorySpec{
-			Interval: interval,
-			URL:      url,
+			Interval:  interval,
+			URL:       ensureOCIScheme(url),
+			SecretRef: secretRef,
 			Reference: &sourcev1.OCIRepositoryRef{
 				Tag: version,
 			},
