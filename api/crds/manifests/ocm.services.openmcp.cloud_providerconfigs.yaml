@@ -59,6 +59,11 @@ spec:
                       retries:
                         type: integer
                     type: object
+                  interval:
+                    format: duration
+                    type: string
+                  targetNamespace:
+                    type: string
                   upgrade:
                     description: HelmUpgradeConfig configures Helm upgrade actions.
                     properties:
@@ -80,6 +85,8 @@ spec:
                       retries:
                         type: integer
                     type: object
+                  values:
+                    x-kubernetes-preserve-unknown-fields: true
                 type: object
               pollInterval:
                 default: 1m

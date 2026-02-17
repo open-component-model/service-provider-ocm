@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"time"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,6 +36,13 @@ type ProviderConfigSpec struct {
 
 // HelmConfig configures Helm install and upgrade behavior for managed HelmReleases.
 type HelmConfig struct {
+	// +optional
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// +optional
+	// +kubebuilder:validation:Format=duration
+	Interval *metav1.Duration `json:"interval,omitempty"`
+	// +optional
+	Values *apiextensionsv1.JSON `json:"values,omitempty"`
 	// +optional
 	Install *HelmInstallConfig `json:"install,omitempty"`
 	// +optional

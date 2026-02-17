@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -72,7 +71,7 @@ func (r *OCMReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.
 
 	l.Info("checking tenantNamespace", "namespace", tenantNamespace)
 
-	if err := r.createOrUpdateOCIRepository(ctx, svcobj, clusters, tenantNamespace); err != nil {
+	if err := r.createOrUpdateOCIRepository(ctx, svcobj, clusters, tenantNamespace, providerConfig); err != nil {
 		spruntime.StatusFailed(svcobj, err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile OCI Repository: %w", err)
 	}
@@ -97,7 +96,7 @@ func (r *OCMReconciler) Delete(ctx context.Context, obj *apiv1alpha1.OCM, provid
 	}
 
 	var objects []client.Object
-	ociRepository := createOciRepository(obj.Spec.URL, obj.Spec.Version, tenantNamespace)
+	ociRepository := createOciRepository(obj.Spec.URL, obj.Spec.Version, tenantNamespace, providerConfig)
 	objects = append(objects, ociRepository)
 	helmRelease, err := r.createHelmRelease(ctx, tenantNamespace, obj.Name, providerConfig)
 	if err != nil {
@@ -147,8 +146,8 @@ func (r *OCMReconciler) getMcpFluxConfig(ctx context.Context, namespace, objectN
 	}, nil
 }
 
-func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, svcobj *apiv1alpha1.OCM, _ spruntime.ClusterContext, namespace string) error {
-	ociRepository := createOciRepository(svcobj.Spec.URL, svcobj.Spec.Version, namespace)
+func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, svcobj *apiv1alpha1.OCM, _ spruntime.ClusterContext, namespace string, providerConfig *apiv1alpha1.ProviderConfig) error {
+	ociRepository := createOciRepository(svcobj.Spec.URL, svcobj.Spec.Version, namespace, providerConfig)
 	managedObj := &sourcev1.OCIRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ociRepository.Name,
@@ -190,14 +189,19 @@ func (r *OCMReconciler) createOrUpdateHelmRelease(ctx context.Context, namespace
 	return nil
 }
 
-func createOciRepository(url, version, namespace string) *sourcev1.OCIRepository {
+func createOciRepository(url, version, namespace string, providerConfig *apiv1alpha1.ProviderConfig) *sourcev1.OCIRepository {
+	interval := metav1.Duration{Duration: time.Minute}
+	if providerConfig != nil && providerConfig.Spec.HelmConfig != nil && providerConfig.Spec.HelmConfig.Interval != nil {
+		interval = *providerConfig.Spec.HelmConfig.Interval
+	}
+
 	return &sourcev1.OCIRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      OCIRepositoryName,
 			Namespace: namespace,
 		},
 		Spec: sourcev1.OCIRepositorySpec{
-			Interval: metav1.Duration{Duration: time.Minute},
+			Interval: interval,
 			URL:      url,
 			Reference: &sourcev1.OCIRepositoryRef{
 				Tag: version,
@@ -212,18 +216,26 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace, object
 		return nil, fmt.Errorf("failed to get FluxConfig: %w", err)
 	}
 
-	values := make(map[string]any)
-	values["manager"] = map[string]any{
-		"concurrency": map[string]any{
-			"resource": 21,
-		},
-		"logging": map[string]any{
-			"level": "debug",
-		},
+	targetNamespace := metav1.NamespaceDefault
+	interval := metav1.Duration{Duration: time.Minute}
+
+	var helmConfig *apiv1alpha1.HelmConfig
+	if providerConfig != nil {
+		helmConfig = providerConfig.Spec.HelmConfig
 	}
-	content, err := json.Marshal(values)
-	if err != nil {
-		return nil, err
+
+	if helmConfig != nil {
+		if helmConfig.TargetNamespace != nil {
+			targetNamespace = *helmConfig.TargetNamespace
+		}
+		if helmConfig.Interval != nil {
+			interval = *helmConfig.Interval
+		}
+	}
+
+	var helmValues *apiextensionsv1.JSON
+	if helmConfig != nil && helmConfig.Values != nil {
+		helmValues = helmConfig.Values
 	}
 
 	install, upgrade := buildHelmActions(providerConfig)
@@ -234,9 +246,9 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace, object
 			Namespace: namespace,
 		},
 		Spec: helmv2.HelmReleaseSpec{
-			Interval:         metav1.Duration{Duration: time.Minute},
-			TargetNamespace:  metav1.NamespaceDefault,
-			StorageNamespace: metav1.NamespaceDefault,
+			Interval:         interval,
+			TargetNamespace:  targetNamespace,
+			StorageNamespace: targetNamespace,
 			Install:          install,
 			Upgrade:          upgrade,
 			ChartRef: &helmv2.CrossNamespaceSourceReference{
@@ -244,7 +256,7 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace, object
 				Name:      OCIRepositoryName,
 				Namespace: namespace,
 			},
-			Values: &apiextensionsv1.JSON{Raw: content},
+			Values: helmValues,
 			KubeConfig: &meta.KubeConfigReference{
 				SecretRef: fluxConfigRef,
 			},
