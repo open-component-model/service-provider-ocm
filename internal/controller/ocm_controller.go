@@ -266,11 +266,6 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace string,
 
 	helmValues := providerConfig.GetValues()
 
-	releaseName := apiv1alpha1.DefaultReleaseName
-	if svcobj.Spec.Name != "" {
-		releaseName = svcobj.Spec.Name
-	}
-
 	remediationStrategy := helmv2.RollbackRemediationStrategy
 
 	return &helmv2.HelmRelease{
@@ -279,7 +274,7 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace string,
 			Namespace: namespace,
 		},
 		Spec: helmv2.HelmReleaseSpec{
-			ReleaseName:      releaseName,
+			ReleaseName:      apiv1alpha1.DefaultReleaseName,
 			Interval:         metav1.Duration{Duration: time.Minute},
 			TargetNamespace:  OcmSystemNamespace,
 			StorageNamespace: OcmSystemNamespace,

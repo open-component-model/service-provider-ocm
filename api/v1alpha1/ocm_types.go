@@ -25,11 +25,7 @@ const DefaultReleaseName = "ocm-k8s-toolkit"
 
 // OCMSpec defines the desired state of OCM
 type OCMSpec struct {
-	// +optional
-	// +kubebuilder:default:="ocm-k8s-toolkit"
-	Name string `json:"name,omitempty"`
 	// Version is the version of the controller to install.
-	// +required
 	Version string `json:"version"`
 }
 

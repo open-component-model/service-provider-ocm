@@ -27,10 +27,9 @@ spec:
   version: v0.1.0
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `spec.name` | `string` | no | `ocm-k8s-toolkit` | Helm release name on the workload cluster |
-| `spec.version` | `string` | yes | — | Chart version tag |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `spec.version` | `string` | yes | Chart version tag |
 
 ### ProviderConfig
 
