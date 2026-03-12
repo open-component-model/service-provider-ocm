@@ -22,7 +22,7 @@ The domain service API. Created on the onboarding cluster, one per tenant.
 apiVersion: ocm.services.openmcp.cloud/v1alpha1
 kind: OCM
 metadata:
-  name: my-ocm
+  name: mcp-01 # must match your MCP cluster so it will track the right cluster
 spec:
   version: v0.1.0
 ```
@@ -30,6 +30,9 @@ spec:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `spec.version` | `string` | yes | Chart version tag |
+
+_Note_: The name of the object _**MUST**_ match the name of your MCP cluster offering. This
+is to ensure that no multiple installations can exist for the same cluster.
 
 ### ProviderConfig
 
@@ -40,7 +43,7 @@ secret replication, and Helm values passed to managed HelmReleases.
 apiVersion: ocm.services.openmcp.cloud/v1alpha1
 kind: ProviderConfig
 metadata:
-  name: ocm-provider-config
+  name: ocm # This name here is important!
 spec:
   pollInterval: 5m
   chartURL: ghcr.io/open-component-model/kubernetes/controller/chart
