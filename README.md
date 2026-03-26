@@ -1,8 +1,11 @@
 # service-provider-ocm
 
 An [openMCP](https://github.com/openmcp-project) Service Provider that installs and manages
-[OCM K8s Toolkit](https://github.com/open-component-model/ocm-k8s-toolkit) on workload clusters
-via Flux HelmReleases.
+[OCM K8s Toolkit](https://github.com/open-component-model/open-component-model/tree/main/kubernetes/controller) on
+workload clusters via Flux HelmReleases.
+
+[![REUSE status](https://api.reuse.software/badge/github.com/open-component-model/service-provider-ocm)](https://api.reuse.software/info/github.com/open-component-model/service-provider-ocm)
+
 
 ## How It Works
 
@@ -24,7 +27,7 @@ kind: OCM
 metadata:
   name: mcp-01 # must match your MCP cluster so it will track the right cluster
 spec:
-  version: v0.1.0
+  version: 0.2.0
 ```
 
 | Field | Type | Required | Description |
@@ -64,13 +67,31 @@ spec:
 | `imagePullSecret` | `LocalObjectReference` | no | —                                                          | Secret to replicate from the controller's namespace into tenant namespaces and set as `secretRef` on the `OCIRepository` |
 | `values` | `object` | no | —                                                          | Arbitrary Helm values passed directly to the HelmRelease |
 
+## How the OCM K8s toolkit works
+
+Check out the [controller concept](https://ocm.software/docs/concepts/ocm-controllers/) and our guides, e.g.
+[Deploy Helm Charts](https://ocm.software/docs/getting-started/deploy-helm-charts/).
+
 ## Running E2E Tests
 
 ```shell
 task test-e2e
 ```
 
+## Contributing
+
+Code contributions, feature requests, bug reports, and help requests are very welcome. Please refer to the
+[Contributing Guide in the Community repository](https://github.com/open-component-model/.github/blob/main/CONTRIBUTING.md)
+for more information on how to contribute to OCM.
+
+OCM follows the [NeoNephos Code of Conduct](https://github.com/neonephos/.github/blob/main/CODE_OF_CONDUCT.md).
+
 ## Licensing
 
-Copyright 2025 SAP SE or an SAP affiliate company and service-provider-ocm contributors.
-See [LICENSE](LICENSE) for details.
+Please see our [LICENSE](LICENSE) for copyright and license information.
+Detailed information including third-party components and their licensing/copyright information is available
+[via the REUSE tool](https://api.reuse.software/info/github.com/open-component-model/service-provider-ocm).
+
+---
+
+<p align="center"><img alt="Bundesministerium für Wirtschaft und Energie (BMWE)-EU funding logo" src="https://apeirora.eu/assets/img/BMWK-EU.png" width="400"/></p>
