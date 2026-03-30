@@ -3,4 +3,5 @@ kind: OCM
 metadata:
   name: test-mcp
 spec:
+  # renovate: datasource=docker depName=ghcr.io/open-component-model/kubernetes/controller/chart
   version: 0.2.0
