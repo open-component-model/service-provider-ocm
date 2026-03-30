@@ -1,0 +1,55 @@
+name: Renovate
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - .github/renovate.json5
+      - .github/workflows/renovate.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/renovate.json5
+      - .github/workflows/renovate.yml
+
+permissions:
+  contents: read
+
+env:
+  RENOVATE_CONFIG_FILE: .github/renovate.json5
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            ${{ env.RENOVATE_CONFIG_FILE }}
+
+      - if: ${{ github.event_name != 'pull_request' && github.repository_owner == 'open-component-model' }}
+        id: generate_token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        with:
+          app-id: ${{ secrets.OCMBOT_APP_ID }}
+          private-key: ${{ secrets.OCMBOT_PRIV_KEY }}
+
+      - name: Ensure Dry-Run on Pull Requests
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "RENOVATE_DRY_RUN=extract" >> $GITHUB_ENV
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@7b4b65bf31e07d4e3e51708d07700fb41bc03166 # v46.1.3
+        with:
+          token: ${{ steps.generate_token.outputs.token || secrets.GITHUB_TOKEN }}
+        env:
+          RENOVATE_ONBOARDING: 'false'
+          RENOVATE_USERNAME: 'ocmbot[bot]'
+          RENOVATE_PLATFORM: 'github'
+          RENOVATE_PLATFORM_COMMIT: 'true'
+          RENOVATE_REPOSITORIES: '${{ github.repository }}'

@@ -1,0 +1,51 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    'config:best-practices',
+    'security:openssf-scorecard',
+    'helpers:pinGitHubActionDigests',
+    ':rebaseStalePrs',
+  ],
+  // Keep the hack/common submodule (openmcp-project/build) up to date.
+  'git-submodules': {
+    enabled: true,
+  },
+  automerge: false,
+  automergeType: 'pr',
+  separateMinorPatch: true,
+  packageRules: [
+    // Auto-merge minor and patch updates; major updates require manual review.
+    {
+      matchUpdateTypes: ['minor', 'patch'],
+      automerge: true,
+    },
+    {
+      matchCategories: ['golang'],
+      postUpdateOptions: ['gomodTidy'],
+    },
+    // Do not create PRs for digest/SHA-only changes.
+    {
+      matchDatasources: ['docker'],
+      matchUpdateTypes: ['digest'],
+      enabled: false,
+    },
+  ],
+  customManagers: [
+    // Track new stable releases of the OCM K8s Toolkit Helm chart in GHCR.
+    // Matches files annotated with "# renovate: datasource=docker depName=...".
+    // Uses semver versioning so pre-release tags (RC, alpha, beta) are ignored.
+    {
+      description: 'OCM K8s Toolkit chart version',
+      customType: 'regex',
+      managerFilePatterns: [
+        '/test/e2e/onboarding/ocm\\.yaml/',
+        '/README\\.md/',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s+version:\\s+(?<currentValue>\\S+)',
+      ],
+      versioningTemplate: 'semver',
+    },
+  ],
+}
