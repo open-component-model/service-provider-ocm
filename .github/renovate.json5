@@ -7,31 +7,77 @@
     'helpers:pinGitHubActionDigests',
     ':rebaseStalePrs',
   ],
+
   // Keep the hack/common submodule (openmcp-project/build) up to date.
   'git-submodules': {
     enabled: true,
   },
+
+  // Default: do not auto-merge. Individual rules below opt in for low-risk updates.
   automerge: false,
   automergeType: 'pr',
+
+  // Create separate PRs for minor vs. patch bumps so they can be reviewed and
+  // merged independently (e.g. a patch security fix is not blocked by a minor
+  // feature update).
   separateMinorPatch: true,
+
   packageRules: [
-    // Auto-merge minor and patch updates; major updates require manual review.
+    // ── Auto-merge policy ────────────────────────────────────────────────
+    // Minor and patch updates are auto-merged after CI passes.
+    // Major updates are left open for manual review because they may
+    // contain breaking changes.
     {
       matchUpdateTypes: ['minor', 'patch'],
       automerge: true,
     },
+
+    // ── Go module hygiene ────────────────────────────────────────────────
+    // Run `go mod tidy` after every Go dependency update to keep go.sum
+    // consistent and avoid noisy follow-up commits.
     {
       matchCategories: ['golang'],
       postUpdateOptions: ['gomodTidy'],
     },
-    // Do not create PRs for digest/SHA-only changes.
+
+    // ── Suppress Docker digest-only churn ────────────────────────────────
+    // Digest-only bumps for Docker images create noise without a meaningful
+    // version change. Disable them; tagged version bumps still come through.
     {
       matchDatasources: ['docker'],
       matchUpdateTypes: ['digest'],
       enabled: false,
     },
+
+    // ── Dependency grouping ──────────────────────────────────────────────
+    // Group related dependencies into a single PR to reduce review overhead
+    // and ensure co-dependent packages stay in sync.
+
+    // Kubernetes client libraries (k8s.io, sigs.k8s.io) are tightly coupled
+    // and should always be updated together to avoid version skew.
+    {
+      matchPackagePrefixes: ['k8s.io/', 'sigs.k8s.io/'],
+      groupName: 'Kubernetes Go modules',
+    },
+
+    // OCM libraries often share release cycles; grouping them prevents
+    // partial upgrades that could break cross-module compatibility.
+    {
+      matchPackagePrefixes: ['github.com/open-component-model/'],
+      groupName: 'OCM Go modules',
+    },
+
+    // GitHub Actions are pinned to digests (via helpers:pinGitHubActionDigests).
+    // Grouping their updates into one PR keeps CI pipeline changes atomic
+    // and easy to review.
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'GitHub Actions',
+    },
   ],
+
   customManagers: [
+    // ── OCM K8s Toolkit Helm chart tracking ──────────────────────────────
     // Track new stable releases of the OCM K8s Toolkit Helm chart in GHCR.
     // Matches files annotated with "# renovate: datasource=docker depName=...".
     // Uses semver versioning so pre-release tags (RC, alpha, beta) are ignored.
