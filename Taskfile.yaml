@@ -10,6 +10,11 @@ vars:
   CODE_DIRS: '{{.ROOT_DIR}}/cmd/... {{.ROOT_DIR}}/internal/... {{.ROOT_DIR}}/api/v1alpha1/...'
   COMPONENTS: 'service-provider-ocm'
   REPO_URL: 'https://github.com/open-component-model/service-provider-ocm'
+  CHART_COMPONENTS: "[]"
+  CRDS_COMPONENTS: 'service-provider-ocm'
+  CRDS_PATH: '{{.ROOT_DIR}}/api/crds/manifests'
+  LINTER_VERSION: v2.11.3
+  CONTROLLER_GEN_VERSION: v0.20.1
 
 includes:
   shared:
