@@ -13,6 +13,8 @@ vars:
   CHART_COMPONENTS: "[]"
   CRDS_COMPONENTS: 'service-provider-ocm'
   CRDS_PATH: '{{.ROOT_DIR}}/api/crds/manifests'
+  LINTER_VERSION: v2.11.3
+  CONTROLLER_GEN_VERSION: v0.20.1
 
 includes:
   shared:
