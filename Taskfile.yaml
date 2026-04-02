@@ -10,6 +10,9 @@ vars:
   CODE_DIRS: '{{.ROOT_DIR}}/cmd/... {{.ROOT_DIR}}/internal/... {{.ROOT_DIR}}/api/v1alpha1/...'
   COMPONENTS: 'service-provider-ocm'
   REPO_URL: 'https://github.com/open-component-model/service-provider-ocm'
+  CHART_COMPONENTS: "[]"
+  CRDS_COMPONENTS: 'service-provider-ocm'
+  CRDS_PATH: '{{.ROOT_DIR}}/api/crds/manifests'
 
 includes:
   shared:
