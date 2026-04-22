@@ -66,7 +66,6 @@ var (
 	platformScheme   = runtime.NewScheme()
 	onboardingScheme = runtime.NewScheme()
 	mcpScheme        = runtime.NewScheme()
-	workloadScheme   = runtime.NewScheme()
 	setupLog         = ctrl.Log.WithName("setup")
 )
 
@@ -75,7 +74,6 @@ func init() {
 	initPlatformScheme()
 	initOnboardingScheme()
 	initMcpScheme()
-	initWorkloadScheme()
 }
 
 func initPlatformScheme() {
@@ -101,9 +99,6 @@ func initMcpScheme() {
 	utilruntime.Must(apiextensionv1.AddToScheme(mcpScheme))
 	utilruntime.Must(sourcev1.AddToScheme(mcpScheme))
 	utilruntime.Must(helmv2.AddToScheme(mcpScheme))
-}
-func initWorkloadScheme() {
-	utilruntime.Must(clientgoscheme.AddToScheme(workloadScheme))
 }
 
 // nolint:gocyclo
@@ -329,19 +324,12 @@ func main() {
 		// The name here for the controller is quite important as it will result in the generated name for access requests and secrets.
 		WithClusterAccessReconciler(clusteraccess.NewClusterAccessReconciler(platformCluster.Client(), "ocm.services.openmcp.cloud").
 			WithMCPScheme(mcpScheme).
-			WithWorkloadScheme(workloadScheme).
 			WithRetryInterval(10 * time.Second).
 			WithMCPPermissions(adminPermissions).WithMCPRoleRefs([]common.RoleRef{
 			{
 				Name: "cluster-admin",
 				Kind: "ClusterRole",
-			}}).
-			WithWorkloadPermissions(adminPermissions).WithWorkloadRoleRefs([]common.RoleRef{
-			{
-				Name: "cluster-admin",
-				Kind: "ClusterRole",
-			},
-		}))
+			}}))
 	if err := spr.SetupWithManager(mgr, "ocm", providerConfigUpdates); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "OCM")
 		os.Exit(1)
