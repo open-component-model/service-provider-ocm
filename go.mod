@@ -1,13 +1,13 @@
 module github.com/open-component-model/service-provider-ocm
 
-go 1.26.1
+go 1.26.2
 
 require (
 	github.com/fluxcd/helm-controller/api v1.5.4
 	github.com/fluxcd/pkg/apis/meta v1.26.0
 	github.com/fluxcd/source-controller/api v1.8.3
 	github.com/openmcp-project/controller-utils v0.27.1
-	github.com/openmcp-project/openmcp-operator/api v0.18.1
+	github.com/openmcp-project/openmcp-operator/api v0.19.0
 	github.com/openmcp-project/openmcp-operator/lib v0.18.1
 	k8s.io/api v0.35.4
 	k8s.io/apimachinery v0.35.4
