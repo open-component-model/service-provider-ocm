@@ -29,3 +29,6 @@ go.work
 *.html
 
 /tmp
+
+# Local cache of gitguardian
+.cache_ggshield
