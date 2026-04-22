@@ -1,0 +1,5 @@
+secret:
+  ignored_matches:
+  - match: a7aef567c4767ee2c32ab1105f330bef53a1b1070783faa819beec736612aad3
+    name: test/e2e/platform/pullsecrets.yaml used for tests
+version: 2
