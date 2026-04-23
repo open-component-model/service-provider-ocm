@@ -85,6 +85,19 @@ func TestServiceProvider(t *testing.T) {
 				t.Errorf("pull secret not found: %v", err)
 			}
 
+			mcpConfig, err := clusterutils.MCPConfig(ctx, config, mcpName)
+			if err != nil {
+				t.Errorf("failed to get mcp config: %v", err)
+				return ctx
+			}
+			mcpPullSecret := &corev1.Secret{}
+			mcpPullSecret.SetName("privateregcred")
+			mcpPullSecret.SetNamespace("ocm-k8s-toolkit-system")
+			mcpPullSecrets := &corev1.SecretList{Items: []corev1.Secret{*mcpPullSecret}}
+			if err := wait.For(conditions.New(mcpConfig.Client().Resources()).ResourcesFound(mcpPullSecrets), wait.WithTimeout(2*time.Minute)); err != nil {
+				t.Errorf("mcp pull secret not found: %v", err)
+			}
+
 			return ctx
 		}).
 		Assess("verify domain objects can be created", providers.ImportDomainAPIs(mcpName, "mcp")).
