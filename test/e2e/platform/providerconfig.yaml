@@ -6,3 +6,7 @@ spec:
   pollInterval: 1m
   imagePullSecret:
     name: privateregcred
+  values:
+    manager:
+      imagePullSecrets:
+        - name: privateregcred
