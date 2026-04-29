@@ -44,9 +44,9 @@ import (
 
 const (
 	// HelmReleaseName is the name of the helmRelease object created for the controller.
-	HelmReleaseName = "helm-release"
+	HelmReleaseName = "sp-ocm-k8s-toolkit"
 	// OCIRepositoryName is the name of the oci repository object pointing to the helm chart of the controller.
-	OCIRepositoryName = "oci-repository"
+	OCIRepositoryName = "sp-ocm-k8s-toolkit"
 	// OcmSystemNamespace is the default namespace on the target cluster to use to install the ocm-k8s-toolkit controller into.
 	OcmSystemNamespace = "ocm-k8s-toolkit-system"
 	// requestSuffixMCP is the suffix used for the mcp cluster.
