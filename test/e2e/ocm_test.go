@@ -61,11 +61,11 @@ func TestServiceProvider(t *testing.T) {
 			}
 
 			helmRelease := &helmv2.HelmRelease{}
-			helmRelease.SetName("helm-release")
+			helmRelease.SetName("sp-ocm-k8s-toolkit")
 			helmRelease.SetNamespace(tenantNamespace)
 
 			ociRepo := &sourcev1.OCIRepository{}
-			ociRepo.SetName("oci-repository")
+			ociRepo.SetName("sp-ocm-k8s-toolkit")
 			ociRepo.SetNamespace(tenantNamespace)
 
 			chartSecret := &corev1.Secret{}
