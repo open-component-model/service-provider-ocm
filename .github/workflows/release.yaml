@@ -112,12 +112,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push dev VERSION
+      - name: Change to dev VERSION
         if: ${{ env.SKIP != 'true' }}
         run: |
           task release:set-version --verbose -- "${{ env.version }}-dev"
-          git config user.name "${{ env.AUTHOR_NAME }}"
-          git config user.email "${{ env.AUTHOR_EMAIL }}"
-          git add VERSION
-          git commit -m "chore(release): Update VERSION to ${{ env.version }}-dev"
-          git push origin main
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        if: ${{ env.SKIP != 'true' }}
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          title: "chore(release): change to dev version"
+          commit-message: "chore(release): change to dev version"
+          branch: "chore/dev-version"
+          delete-branch: true
+          sign-commits: true
+          add-paths: |
+            VERSION
+          body: |
+            **What this PR does / why we need it**:
+
+            Update service provider OCM Version to "-dev" again.
+
+            **Release note**:
+            ```other operator
+            NONE
+            ```
