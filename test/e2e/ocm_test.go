@@ -7,6 +7,7 @@ import (
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
+	apiv1alpha1 "github.com/open-component-model/service-provider-ocm/api/v1alpha1"
 	libutils "github.com/openmcp-project/openmcp-operator/lib/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -96,6 +97,43 @@ func TestServiceProvider(t *testing.T) {
 			mcpPullSecrets := &corev1.SecretList{Items: []corev1.Secret{*mcpPullSecret}}
 			if err := wait.For(conditions.New(mcpConfig.Client().Resources()).ResourcesFound(mcpPullSecrets), wait.WithTimeout(2*time.Minute)); err != nil {
 				t.Errorf("mcp pull secret not found: %v", err)
+			}
+
+			return ctx
+		}).
+		Assess("resources for the ocm object contain helm release and oci repository", func(ctx context.Context, t *testing.T, config *envconf.Config) context.Context {
+			onboardingConfig, err := clusterutils.OnboardingConfig()
+			if err != nil {
+				t.Error(err)
+				return ctx
+			}
+
+			scheme := onboardingConfig.Client().Resources().GetScheme()
+			if err := apiv1alpha1.AddToScheme(scheme); err != nil {
+				t.Errorf("failed to register ocm scheme: %v", err)
+				return ctx
+			}
+
+			ocm := &apiv1alpha1.OCM{}
+			if err := onboardingConfig.Client().Resources().Get(ctx, mcpName, corev1.NamespaceDefault, ocm); err != nil {
+				t.Errorf("failed to get OCM object: %v", err)
+				return ctx
+			}
+
+			var hasOCI, hasHelm bool
+			for _, r := range ocm.Status.Resources {
+				switch r.Kind {
+				case "OCIRepository":
+					hasOCI = true
+				case "HelmRelease":
+					hasHelm = true
+				}
+			}
+			if !hasOCI {
+				t.Errorf("OCM status resources do not contain OCIRepository, got: %v", ocm.Status.Resources)
+			}
+			if !hasHelm {
+				t.Errorf("OCM status resources do not contain HelmRelease, got: %v", ocm.Status.Resources)
 			}
 
 			return ctx
