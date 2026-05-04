@@ -17,11 +17,44 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // DefaultReleaseName provides the default value for the helm release of the ocm controller.
 const DefaultReleaseName = "ocm-k8s-toolkit"
+
+// InstancePhase is a custom type representing the phase of a service instance.
+type InstancePhase string
+
+// ResourceLocation is a custom type representing the location of a resource.
+type ResourceLocation string
+
+// Constants representing the phases of an instance lifecycle and the
+// locations where managed resources can live.
+const (
+	Pending     InstancePhase = "Pending"
+	Progressing InstancePhase = "Progressing"
+	Ready       InstancePhase = "Ready"
+	Failed      InstancePhase = "Failed"
+	Terminating InstancePhase = "Terminating"
+	Unknown     InstancePhase = "Unknown"
+
+	ManagedControlPlane ResourceLocation = "ManagedControlPlane"
+	PlatformCluster     ResourceLocation = "PlatformCluster"
+)
+
+// ManagedResource defines a kubernetes object with its lifecycle phase.
+type ManagedResource struct {
+	corev1.TypedObjectReference `json:",inline"`
+
+	// +required
+	Phase InstancePhase `json:"phase"`
+	// +optional
+	Message string `json:"message,omitempty"`
+	// +optional
+	Location ResourceLocation `json:"location,omitempty"`
+}
 
 // OCMSpec defines the desired state of OCM
 type OCMSpec struct {
@@ -51,6 +84,9 @@ type OCMStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration"`
 	// Phase is the current phase of the resource.
 	Phase string `json:"phase"`
+	// Resources managed by this OCM instance.
+	// +optional
+	Resources []ManagedResource `json:"resources,omitempty"`
 }
 
 // OCM is the Schema for the ocms API
