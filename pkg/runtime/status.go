@@ -43,7 +43,7 @@ func StatusReady(obj ServiceProviderAPI) {
 	obj.SetPhase(StatusPhaseReady)
 }
 
-// StatusFailed indicates ready with ready true
+// StatusFailed indicates ready with ready false
 func StatusFailed(obj ServiceProviderAPI, msg string) {
 	meta.SetStatusCondition(obj.GetConditions(), metav1.Condition{
 		Type:               ServiceProviderConditionReady,
