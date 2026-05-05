@@ -7,7 +7,6 @@ import (
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
-	apiv1alpha1 "github.com/open-component-model/service-provider-ocm/api/v1alpha1"
 	libutils "github.com/openmcp-project/openmcp-operator/lib/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,6 +14,8 @@ import (
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
+
+	apiv1alpha1 "github.com/open-component-model/service-provider-ocm/api/v1alpha1"
 
 	"github.com/openmcp-project/openmcp-testing/pkg/clusterutils"
 	openmcpconditions "github.com/openmcp-project/openmcp-testing/pkg/conditions"
@@ -125,8 +126,14 @@ func TestServiceProvider(t *testing.T) {
 				switch r.Kind {
 				case "OCIRepository":
 					hasOCI = true
+					if r.Phase != apiv1alpha1.Ready {
+						t.Errorf("OCIRepository phase is %q, want %q", r.Phase, apiv1alpha1.Ready)
+					}
 				case "HelmRelease":
 					hasHelm = true
+					if r.Phase != apiv1alpha1.Ready {
+						t.Errorf("HelmRelease phase is %q, want %q", r.Phase, apiv1alpha1.Ready)
+					}
 				}
 			}
 			if !hasOCI {

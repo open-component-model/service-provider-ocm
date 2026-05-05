@@ -29,6 +29,7 @@ import (
 	clustersv1alpha1 "github.com/openmcp-project/openmcp-operator/api/clusters/v1alpha1"
 	libutils "github.com/openmcp-project/openmcp-operator/lib/utils"
 	corev1 "k8s.io/api/core/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -90,7 +91,8 @@ func (r *OCMReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.
 		return ctrl.Result{}, fmt.Errorf("failed to replicate image pull secret: %w", err)
 	}
 
-	if err := r.createOrUpdateOCIRepository(ctx, providerConfig.GetChartURL(), svcobj.Spec.Version, prefixedSecretName, tenantNamespace); err != nil {
+	ociRepo, err := r.createOrUpdateOCIRepository(ctx, providerConfig.GetChartURL(), svcobj.Spec.Version, prefixedSecretName, tenantNamespace)
+	if err != nil {
 		spruntime.StatusFailed(svcobj, err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile OCI Repository: %w", err)
 	}
@@ -98,15 +100,47 @@ func (r *OCMReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.
 		spruntime.StatusFailed(svcobj, err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to replicate MCP image pull secrets: %w", err)
 	}
-	if err := r.createOrUpdateHelmRelease(ctx, tenantNamespace, svcobj, providerConfig); err != nil {
+	helmRel, err := r.createOrUpdateHelmRelease(ctx, tenantNamespace, svcobj, providerConfig)
+	if err != nil {
 		spruntime.StatusFailed(svcobj, err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile HelmRelease: %w", err)
 	}
 
 	l.Info("Done reconciling OCM resource", "name", svcobj.Name)
 
-	svcobj.Status.Resources = managedResources(tenantNamespace, apiv1alpha1.Ready)
-	spruntime.StatusReady(svcobj)
+	ociPhase, ociMsg := resourceStatus(ociRepo.Status.Conditions)
+	hrPhase, hrMsg := resourceStatus(helmRel.Status.Conditions)
+	svcobj.Status.Resources = []apiv1alpha1.ManagedResource{
+		{
+			TypedObjectReference: corev1.TypedObjectReference{
+				APIGroup:  new(sourcev1.GroupVersion.Group),
+				Kind:      "OCIRepository",
+				Name:      OCIRepositoryName,
+				Namespace: new(tenantNamespace),
+			},
+			Phase:    ociPhase,
+			Message:  ociMsg,
+			Location: apiv1alpha1.PlatformCluster,
+		},
+		{
+			TypedObjectReference: corev1.TypedObjectReference{
+				APIGroup:  new(helmv2.GroupVersion.Group),
+				Kind:      "HelmRelease",
+				Name:      HelmReleaseName,
+				Namespace: new(tenantNamespace),
+			},
+			Phase:    hrPhase,
+			Message:  hrMsg,
+			Location: apiv1alpha1.PlatformCluster,
+		},
+	}
+
+	if ociPhase == apiv1alpha1.Ready && hrPhase == apiv1alpha1.Ready {
+		spruntime.StatusReady(svcobj)
+	} else {
+		spruntime.StatusProgressing(svcobj, "Reconciling", "Waiting for managed resources to become ready")
+	}
+	// The SPReconciler wrapper applies PollInterval as a fallback RequeueAfter.
 	return ctrl.Result{}, nil
 }
 
@@ -163,31 +197,41 @@ func (r *OCMReconciler) Delete(ctx context.Context, obj *apiv1alpha1.OCM, provid
 // managedResources returns the set of platform-cluster objects this controller
 // owns for an OCM instance, tagged with the given lifecycle phase.
 func managedResources(tenantNamespace string, phase apiv1alpha1.InstancePhase) []apiv1alpha1.ManagedResource {
-	ns := tenantNamespace
-	ociGroup := sourcev1.GroupVersion.Group
-	helmGroup := helmv2.GroupVersion.Group
 	return []apiv1alpha1.ManagedResource{
 		{
 			TypedObjectReference: corev1.TypedObjectReference{
-				APIGroup:  &ociGroup,
+				APIGroup:  new(sourcev1.GroupVersion.Group),
 				Kind:      "OCIRepository",
 				Name:      OCIRepositoryName,
-				Namespace: &ns,
+				Namespace: new(tenantNamespace),
 			},
 			Phase:    phase,
 			Location: apiv1alpha1.PlatformCluster,
 		},
 		{
 			TypedObjectReference: corev1.TypedObjectReference{
-				APIGroup:  &helmGroup,
+				APIGroup:  new(helmv2.GroupVersion.Group),
 				Kind:      "HelmRelease",
 				Name:      HelmReleaseName,
-				Namespace: &ns,
+				Namespace: new(tenantNamespace),
 			},
 			Phase:    phase,
 			Location: apiv1alpha1.PlatformCluster,
 		},
 	}
+}
+
+// resourceStatus maps a Flux resource's Ready condition to an InstancePhase.
+// Returns Ready with an empty message when ready, otherwise Progressing with
+// the Ready condition's message (or empty if the condition is absent).
+func resourceStatus(conditions []metav1.Condition) (apiv1alpha1.InstancePhase, string) {
+	if apimeta.IsStatusConditionTrue(conditions, meta.ReadyCondition) {
+		return apiv1alpha1.Ready, ""
+	}
+	if cond := apimeta.FindStatusCondition(conditions, meta.ReadyCondition); cond != nil {
+		return apiv1alpha1.Progressing, cond.Message
+	}
+	return apiv1alpha1.Progressing, ""
 }
 
 func (r *OCMReconciler) getMcpFluxConfig(ctx context.Context, namespace, objectName string) (*meta.SecretKeyReference, error) {
@@ -289,7 +333,7 @@ func (r *OCMReconciler) replicateMCPImagePullSecrets(ctx context.Context, mcpClu
 	return nil
 }
 
-func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, chartURL, version, secretName, namespace string) error {
+func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, chartURL, version, secretName, namespace string) (*sourcev1.OCIRepository, error) {
 	ociRepository := createOciRepository(chartURL, secretName, version, namespace)
 	managedObj := &sourcev1.OCIRepository{
 		ObjectMeta: metav1.ObjectMeta{
@@ -303,16 +347,16 @@ func (r *OCMReconciler) createOrUpdateOCIRepository(ctx context.Context, chartUR
 		managedObj.Spec = ociRepository.Spec
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return managedObj, nil
 }
 
-func (r *OCMReconciler) createOrUpdateHelmRelease(ctx context.Context, namespace string, svcobj *apiv1alpha1.OCM, providerConfig *apiv1alpha1.ProviderConfig) error {
+func (r *OCMReconciler) createOrUpdateHelmRelease(ctx context.Context, namespace string, svcobj *apiv1alpha1.OCM, providerConfig *apiv1alpha1.ProviderConfig) (*helmv2.HelmRelease, error) {
 	helmRelease, err := r.createHelmRelease(ctx, namespace, svcobj, providerConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create helm release: %w", err)
+		return nil, fmt.Errorf("failed to create helm release: %w", err)
 	}
 	managedObj := &helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
@@ -326,10 +370,10 @@ func (r *OCMReconciler) createOrUpdateHelmRelease(ctx context.Context, namespace
 		managedObj.Spec = helmRelease.Spec
 		return nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return managedObj, nil
 }
 
 func ensureOCIScheme(url string) string {
@@ -369,8 +413,6 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace string,
 
 	helmValues := providerConfig.GetValues()
 
-	remediationStrategy := helmv2.RollbackRemediationStrategy
-
 	return &helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      HelmReleaseName,
@@ -393,7 +435,7 @@ func (r *OCMReconciler) createHelmRelease(ctx context.Context, namespace string,
 				CleanupOnFail: true,
 				Remediation: &helmv2.UpgradeRemediation{
 					Retries:  3,
-					Strategy: &remediationStrategy,
+					Strategy: new(helmv2.RollbackRemediationStrategy),
 				},
 			},
 			ChartRef: &helmv2.CrossNamespaceSourceReference{

@@ -118,5 +118,21 @@
       ],
       versioningTemplate: 'semver',
     },
+
+    // ── E2E test infrastructure images ───────────────────────────────────
+    // Track openmcp-operator and cluster-provider-kind image versions used
+    // in e2e tests. Matches Go string literals annotated with the standard
+    // "// renovate: datasource=docker depName=..." comment.
+    {
+      description: 'E2E test infrastructure images',
+      customType: 'regex',
+      managerFilePatterns: [
+        '/test/e2e/main_test\\.go/',
+      ],
+      matchStrings: [
+        '// renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s+Image:\\s+"[^:]+:(?<currentValue>[^"]+)"',
+      ],
+      versioningTemplate: 'semver',
+    },
   ],
 }
