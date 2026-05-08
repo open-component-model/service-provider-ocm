@@ -77,7 +77,7 @@ the repo-specific workflow after you have your local branch ready.
 PR descriptions **must** include the following sections (enforced by CI via
 [validate-pr-content](https://github.com/openmcp-project/build/blob/main/.github/workflows/validate-pr-content.lib.yaml)):
 
-```markdown
+~~~markdown
 **What this PR does / why we need it**:
 
 <your description>
@@ -85,8 +85,8 @@ PR descriptions **must** include the following sections (enforced by CI via
 **Release note**:
 ```other operator
 <release note or NONE>
-`` `
 ```
+~~~
 
 For additional requirements (conventional commits, DCO, commit signing, squash merging), see
 the [OCM Contributing Guide](https://ocm.software/community/contributing/).
@@ -148,7 +148,7 @@ Make sure to note the image tag printed by the build task (e.g.
 `ghcr.io/open-component-model/images/service-provider-ocm:v0.1.2-dev-abc123-platform-arch`).
 Then load that image into the `platform` cluster:
 
-```
+```bash
 # Load the image into the platform cluster (or push to a registry accessible by the cluster)
 kind load docker-image --name platform ghcr.io/open-component-model/images/service-provider-ocm:<version>
 ```
@@ -225,7 +225,7 @@ is created and the OCM K8s toolkit is running. Run on the `mcp` cluster:
 kubectl get pods -n ocm-k8s-toolkit-system
 ```
 
-### 6. Reset the Environment
+### 7. Reset the Environment
 
 ```bash
 cd /path/to/cluster-provider-kind
