@@ -120,10 +120,21 @@ cd cluster-provider-kind
 DEPLOY_SP_CROSSPLANE=false DEPLOY_SP_LANDSCAPER=false ./hack/local-dev.sh deploy
 ```
 
-This creates a KinD cluster with Docker socket access, installs the openMCP operator, cluster
-and service providers, and Flux2.
+### 2. Access the Platform Cluster
 
-### 2. Build and Load the Service Provider Image
+```bash
+# Get a kubeconfig for the platform cluster (written to a temporary file)
+./hack/local-dev.sh access-platform-cluster
+```
+
+To access other clusters (e.g. `onboarding`, `mcp` clusters):
+
+```bash
+kind get clusters
+kind get kubeconfig --name <cluster-name> > <cluster-name>.kubeconfig
+```
+
+### 3. Build and Load the Service Provider Image
 
 ```bash
 # Back in the service-provider-ocm directory
@@ -131,34 +142,21 @@ cd /path/to/service-provider-ocm
 
 # Build the container image for your local platform
 task build:img:build
-
-# Load the image into the KinD cluster (or push to a registry accessible by the cluster)
-kind load docker-image ghcr.io/open-component-model/images/service-provider-ocm:<version> \
-  --name platform
 ```
 
-### 3. Access the Platform Cluster
+Make sure to note the image tag printed by the build task (e.g.
+`ghcr.io/open-component-model/images/service-provider-ocm:v0.1.2-dev-abc123-platform-arch`).
+Then load that image into the `platform` cluster:
 
-```bash
-cd /path/to/cluster-provider-kind
-
-# Get a kubeconfig for the platform cluster (written to a temporary file)
-./hack/local-dev.sh access-platform-cluster
-
-# Or switch kubectl context directly to the platform cluster
-./hack/local-dev.sh access-platform-cluster --force
 ```
-
-To access other clusters (e.g., MCP workload clusters):
-
-```bash
-kind get clusters
-kind get kubeconfig --name <cluster-name> > <cluster-name>.kubeconfig
+# Load the image into the platform cluster (or push to a registry accessible by the cluster)
+kind load docker-image --name platform ghcr.io/open-component-model/images/service-provider-ocm:<version>
 ```
 
 ### 4. Install the Service Provider
 
-Register the controller with the openMCP operator on the platform cluster:
+Install the service provider on the `platform` cluster by creating a `ServiceProvider` custom resource that points to
+the image you just built and loaded.
 
 ```bash
 cat <<EOF > service-provider.yaml
@@ -171,7 +169,7 @@ spec:
 EOF
 ```
 
-Adjust the `<version>` to match the image you built and loaded in step 2. Then apply the manifest:
+Then, apply the manifest on the `platform` cluster:
 
 ```bash
 kubectl create -f service-provider.yaml
@@ -179,8 +177,7 @@ kubectl create -f service-provider.yaml
 
 ### 5. Deploy the ProviderConfig and Create an Instance
 
-When the service provider is ready, you can create a `ProviderConfig` to specify the controller's Helm chart and then
-create it:
+When the service provider is ready, you can create the OCM `ProviderConfig`.
 
 ```bash
 cat <<EOF > provider-config.yaml
@@ -194,9 +191,13 @@ spec:
 EOF
 ```
 
+Create it on the `platform` cluster:
+
 ```bash
 kubectl create -f provider-config.yaml
 ```
+
+When the `ProviderConfig` is ready, you can create an `OCM` instance.
 
 ```bash
 cat <<EOF > ocm-instance.yaml
@@ -209,12 +210,20 @@ spec:
 EOF
 ```
 
+Create it on the `onboarding` cluster:
+
 ```bash
-KUBECONFIG=<onboarding cluster kubeconfig> kubectl create -f ocm-instance.yaml
+kubectl create -f ocm-instance.yaml
 ```
 
-For the full service provider development lifecycle, see the
-[Service Provider Development Guide](https://openmcp-project.github.io/docs/developers/serviceprovider/service-providers).
+### 6. Verify the MCP has the OCM K8s toolkit deployed
+
+To verify that the service provider is working end-to-end, check that the `ocm-k8s-toolkit-system` namespace
+is created and the OCM K8s toolkit is running. Run on the `mcp` cluster:
+
+```bash
+kubectl get pods -n ocm-k8s-toolkit-system
+```
 
 ### 6. Reset the Environment
 
@@ -222,6 +231,9 @@ For the full service provider development lifecycle, see the
 cd /path/to/cluster-provider-kind
 ./hack/local-dev.sh reset
 ```
+
+For the full service provider development lifecycle, see the
+[Service Provider Development Guide](https://openmcp-project.github.io/docs/developers/serviceprovider/service-providers).
 
 ## Further Reading
 
