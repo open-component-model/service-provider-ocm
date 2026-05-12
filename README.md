@@ -81,9 +81,11 @@ task test-e2e
 
 ## Contributing
 
-Code contributions, feature requests, bug reports, and help requests are very welcome. Please refer to the
-[Contributing Guide in the Community repository](https://github.com/open-component-model/.github/blob/main/CONTRIBUTING.md)
-for more information on how to contribute to OCM.
+Please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to set up your
+development environment, run tests, and submit pull requests.
+
+For the general OCM contribution process, see the
+[OCM Contributing Guide](https://ocm.software/community/contributing/).
 
 OCM follows the [NeoNephos Code of Conduct](https://github.com/neonephos/.github/blob/main/CODE_OF_CONDUCT.md).
 

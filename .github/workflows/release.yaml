@@ -35,8 +35,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: test-action
-        run: cd hack/common; git status
       - name: Install Task
         uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
         with:
