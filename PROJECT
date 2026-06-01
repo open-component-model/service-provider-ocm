@@ -3,7 +3,7 @@
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
 cliVersion: 4.8.0
-domain: openmcp.cloud
+domain: open-control-plane.io
 layout:
 - go.kubebuilder.io/v4
 projectName: sp-template
@@ -13,7 +13,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: openmcp.cloud
+  domain: open-control-plane.io
   group: foo.services
   kind: FooService
   path: github.com/openmcp-project/service-provider-template/api/v1alpha1
@@ -22,7 +22,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: openmcp.cloud
+  domain: open-control-plane.io
   group: foo.services
   kind: ProviderConfig
   path: github.com/openmcp-project/service-provider-template/api/v1alpha1

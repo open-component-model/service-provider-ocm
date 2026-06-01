@@ -5,7 +5,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.1
   labels:
-    openmcp.cloud/cluster: platform
+    open-control-plane.io/cluster: platform
   name: providerconfigs.ocm.services.open-control-plane.io
 spec:
   group: ocm.services.open-control-plane.io

@@ -160,7 +160,7 @@ the image you just built and loaded.
 
 ```bash
 cat <<EOF > service-provider.yaml
-apiVersion: openmcp.cloud/v1alpha1
+apiVersion: open-control-plane.io/v1alpha1
 kind: ServiceProvider
 metadata:
   name: ocm
@@ -181,7 +181,7 @@ When the service provider is ready, you can create the OCM `ProviderConfig`.
 
 ```bash
 cat <<EOF > provider-config.yaml
-apiVersion: ocm.services.openmcp.cloud/v1alpha1
+apiVersion: ocm.services.open-control-plane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: ocm
@@ -201,7 +201,7 @@ When the `ProviderConfig` is ready, you can create an `OCM` instance.
 
 ```bash
 cat <<EOF > ocm-instance.yaml
-apiVersion: ocm.services.openmcp.cloud/v1alpha1
+apiVersion: ocm.services.open-control-plane.io/v1alpha1
 kind: OCM
 metadata:
   name: test # must match your MCP cluster name; KUBECONFIG=<onboarding cluster kubeconfig> kubectl get mcpv2
