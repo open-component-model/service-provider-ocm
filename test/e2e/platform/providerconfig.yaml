@@ -1,4 +1,4 @@
-apiVersion: ocm.services.openmcp.cloud/v1alpha1
+apiVersion: ocm.services.open-control-plane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: ocm
