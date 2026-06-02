@@ -87,7 +87,7 @@ development environment, run tests, and submit pull requests.
 For the general OCM contribution process, see the
 [OCM Contributing Guide](https://ocm.software/community/contributing/).
 
-OCM follows the [NeoNephos Code of Conduct](https://github.com/neonephos/.github/blob/main/CODE_OF_CONDUCT.md).
+OCM follows the [Linux Foundation EU Code of Conduct](https://linuxfoundation.eu/policies/code-of-conduct).
 
 ## Licensing
 
