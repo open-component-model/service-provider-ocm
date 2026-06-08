@@ -76,7 +76,7 @@ type ProviderConfigStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
-// +kubebuilder:metadata:labels="open-control-plane.io/cluster=platform"
+// +kubebuilder:metadata:labels="openmcp.cloud/cluster=platform"
 type ProviderConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
