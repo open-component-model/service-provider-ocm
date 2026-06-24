@@ -11,13 +11,37 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/openmcp-project/controller-utils/pkg/clusters"
+	apiconst "github.com/openmcp-project/openmcp-operator/api/constants"
 )
+
+func TestSPReconciler_Reconcile_IgnoreAnnotation(t *testing.T) {
+	obj := &fakeApiImpl{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "obj-1",
+			Namespace: testNamespaceName,
+			Annotations: map[string]string{
+				apiconst.OperationAnnotation: apiconst.OperationAnnotationValueIgnore,
+			},
+		},
+	}
+	r := NewSPReconciler[*fakeApiImpl, *fakeProviderConfigImpl](func() *fakeApiImpl {
+		return &fakeApiImpl{}
+	}).
+		WithOnboardingCluster(createFakeCluster(t, "onboarding", obj))
+
+	got, err := r.Reconcile(context.Background(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Name: "obj-1", Namespace: testNamespaceName},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, ctrl.Result{}, got)
+}
 
 func TestSPReconciler_enqueueAllObjects(t *testing.T) {
 	tests := []struct {

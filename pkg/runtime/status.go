@@ -15,6 +15,8 @@ const (
 	StatusPhaseProgressing = "Progressing"
 	// StatusPhaseTerminating indicates that the resource is not ready and in deletion.
 	StatusPhaseTerminating = "Terminating"
+
+	reasonReconcileError = "ReconcileError"
 )
 
 // StatusProgressing indicates progressing with synced false
@@ -64,6 +66,18 @@ func StatusTerminating(obj ServiceProviderAPI) {
 		ObservedGeneration: obj.GetGeneration(),
 		Reason:             "Terminating",
 		Message:            "Cleanup in progress",
+	})
+	obj.SetObservedGeneration(obj.GetGeneration())
+	obj.SetPhase(StatusPhaseTerminating)
+}
+
+func terminatingWithReason(obj ServiceProviderAPI, reason, message string) {
+	meta.SetStatusCondition(obj.GetConditions(), metav1.Condition{
+		Type:               ServiceProviderConditionReady,
+		Status:             metav1.ConditionFalse,
+		ObservedGeneration: obj.GetGeneration(),
+		Reason:             reason,
+		Message:            message,
 	})
 	obj.SetObservedGeneration(obj.GetGeneration())
 	obj.SetPhase(StatusPhaseTerminating)

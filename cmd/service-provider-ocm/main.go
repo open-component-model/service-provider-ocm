@@ -240,7 +240,7 @@ func main() {
 		},
 	}
 	clusterAccessManager := clusteraccess.NewClusterAccessManager(platformCluster.Client(),
-		"ocm.ocm.services.open-control-plane.io", os.Getenv("POD_NAMESPACE"))
+		ocmsv1alpha1.GroupVersion.Group, os.Getenv("POD_NAMESPACE"))
 	clusterAccessManager.WithLogger(&log).
 		WithInterval(10 * time.Second).
 		WithTimeout(30 * time.Minute)
@@ -322,7 +322,7 @@ func main() {
 			PodNamespace:      podNamespace,
 		}).
 		// The name here for the controller is quite important as it will result in the generated name for access requests and secrets.
-		WithClusterAccessReconciler(clusteraccess.NewClusterAccessReconciler(platformCluster.Client(), "ocm.services.open-control-plane.io").
+		WithClusterAccessReconciler(clusteraccess.NewClusterAccessReconciler(platformCluster.Client(), ocmsv1alpha1.GroupVersion.Group).
 			WithMCPScheme(mcpScheme).
 			WithRetryInterval(10 * time.Second).
 			WithMCPPermissions(adminPermissions).WithMCPRoleRefs([]common.RoleRef{
