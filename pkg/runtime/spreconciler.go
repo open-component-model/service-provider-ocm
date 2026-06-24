@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -360,22 +361,32 @@ func (r *SPReconciler[T, PC]) SetupWithManager(mgr ctrl.Manager, name string, pr
 							r.providerConfig.Store(nil)
 						}
 						// reconcile all existing objects
-						var list unstructured.UnstructuredList
-						gvk := r.emptyObj().GetObjectKind().GroupVersionKind()
-						list.SetGroupVersionKind(gvk)
-						if err := r.onboardingCluster.Client().List(ctx, &list); err != nil {
-							return nil
-						}
-						reqs := make([]reconcile.Request, len(list.Items))
-						for i := range list.Items {
-							reqs[i] = reconcile.Request{
-								NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
-							}
-						}
-						return reqs
+						return r.enqueueAllObjects(ctx)
 					},
 				)),
 		).
 		Named(name).
 		Complete(r)
+}
+
+// enqueueAllObjects lists all ServiceProviderAPI objects and returns a reconcile request for each.
+func (r *SPReconciler[T, PC]) enqueueAllObjects(ctx context.Context) []reconcile.Request {
+	var list unstructured.UnstructuredList
+	gvk, err := apiutil.GVKForObject(r.emptyObj(), r.onboardingCluster.Scheme())
+	if err != nil {
+		logf.FromContext(ctx).Error(err, "failed to retrieve gvk")
+		return nil
+	}
+	list.SetGroupVersionKind(gvk)
+	if err := r.onboardingCluster.Client().List(ctx, &list); err != nil {
+		logf.FromContext(ctx).Error(err, "failed to list objects")
+		return nil
+	}
+	reqs := make([]reconcile.Request, len(list.Items))
+	for i := range list.Items {
+		reqs[i] = reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+		}
+	}
+	return reqs
 }
