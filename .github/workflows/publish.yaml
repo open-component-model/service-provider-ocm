@@ -12,7 +12,7 @@ permissions:
 jobs:
   release_tag:
     name: Release version
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     environment:
       name: automation
       deployment: false
