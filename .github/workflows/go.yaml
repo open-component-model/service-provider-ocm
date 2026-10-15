@@ -22,7 +22,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install Flux CLI
-        uses: fluxcd/flux2/action@dddacea72e84737d0033db91be5a97c984a3ebfd # main
+        uses: fluxcd/flux2/action@cab80b65849c76280786fbffd90aaeb8714e43b7 # main
 
       - name: Install Task
         uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
