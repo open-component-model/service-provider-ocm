@@ -3,7 +3,7 @@ module github.com/open-component-model/service-provider-ocm
 go 1.27.2
 
 require (
-	github.com/fluxcd/helm-controller/api v1.7.0
+	github.com/fluxcd/helm-controller/api v1.7.1
 	github.com/fluxcd/pkg/apis/meta v1.38.0
 	github.com/fluxcd/source-controller/api v1.10.1
 	github.com/openmcp-project/controller-utils v0.33.3
