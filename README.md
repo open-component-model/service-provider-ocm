@@ -15,6 +15,22 @@ When an `OCM` resource is created on the onboarding cluster, the controller:
 3. Creates a Flux `OCIRepository` pointing at the resolved chart URL and chart version
 4. Creates a Flux `HelmRelease` that deploys the chart into `ocm-k8s-toolkit-system` on the workload cluster via a kubeconfig reference
 
+## FIPS 140-3
+
+The provider's release build enables FIPS support by default, using
+[Microsoft Go's `systemcrypto` backend and Garden Linux's FIPS OpenSSL provider](https://github.com/openmcp-project/build/pull/160).
+No separate FIPS image is required.
+
+In the provider's startup logs, check `FIPS 140 verification started` for
+`fipsEnforcedByBuild="true"` and `fips140.Enabled=true`. FIPS builds exit with an error
+if FIPS mode is disabled.
+
+The **installed OCM controller is a separate process**: official images since 0.20.0
+also enable FIPS by default, but use the Go Cryptographic Module. See the
+[OCM FIPS reference](https://ocm.software/docs/reference/standards-and-regulations/fips-140-3/)
+for workload verification, constraints, and GPG/cosign boundaries. FIPS-enabled
+components do not certify the whole deployment.
+
 ## API Reference
 
 ### OCM
