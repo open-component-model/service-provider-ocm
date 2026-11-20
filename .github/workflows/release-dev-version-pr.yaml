@@ -8,6 +8,11 @@ on:
         required: false
         default: ""
         type: string
+    secrets:
+      PR_BOT_CLIENT_ID:
+        required: true
+      PR_BOT_PRIVATE_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       version:
@@ -28,29 +33,22 @@ jobs:
     name: Pull Request
     runs-on: ubuntu-26.04
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read # the bot token pushes and opens the pull request
     environment:
-      name: automation
+      name: pull-requests
       deployment: false
     steps:
-      - name: Create GitHub App token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
-        id: app-token
-        with:
-          app-id: ${{ secrets.OCMBOT_APP_ID }}
-          private-key: ${{ secrets.OCMBOT_PRIV_KEY }}
-
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
           submodules: recursive
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Install Task
         uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
@@ -72,6 +70,18 @@ jobs:
             exit 1
           fi
           task release:set-version --verbose -- "$VERSION"
+
+      # Only ocm-bot-pull-request may write automation/** branches (org ruleset "Automation
+      # Branches"). create-pull-request authenticates with this token itself.
+      - name: Get pull request bot token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ secrets.PR_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.PR_BOT_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write # push automation/dev-version
+          permission-pull-requests: write # open the pull request
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
