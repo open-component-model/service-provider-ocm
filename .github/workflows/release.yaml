@@ -9,17 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  release_tag:
-    name: Release version
+  # Decides whether this push is a release. It has no environment, so pushes that only carry a
+  # -dev VERSION or an already tagged one finish here without waiting for an approval.
+  check:
+    name: Check version
     runs-on: ubuntu-26.04
     permissions:
-      contents: write # create the GitHub release; the release bot token creates the tags
-    environment:
-      name: release-automation
-      deployment: false
+      contents: read # read VERSION and the existing tags
     outputs:
-      version: ${{ env.version }}
-      skip: ${{ env.SKIP }}
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.decide.outputs.release }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -50,29 +49,70 @@ jobs:
             exit 1
           fi
           echo "New version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Skip release if version is a dev version
-        if: contains(env.version, '-dev')
+      - name: Decide whether to release
+        id: decide
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          echo "Skipping development version release: ${version}"
-          echo "SKIP=true" >> $GITHUB_ENV
-          exit 0
+          if [[ "$VERSION" == *-dev* ]]; then
+            echo "Skipping development version release: ${VERSION}"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          elif git rev-parse "refs/tags/${VERSION}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION} already exists. Skipping release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag ${VERSION} doesn't exist. Proceeding with release."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Check if VERSION is already tagged
-        id: check_tag
+  release_tag:
+    name: Release version
+    needs: check
+    # A job skipped by its `if` never asks for the environment's approval.
+    if: ${{ needs.check.outputs.release == 'true' }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write # create the GitHub release; the release bot token creates the tags
+    environment:
+      name: release-automation
+      deployment: false
+    env:
+      version: ${{ needs.check.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install Task
+        uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The approval can come much later than the check, e.g. after a second push with the same
+      # VERSION was approved first. Stop before minting a token if the tag exists by now.
+      - name: Check that the tag is still free
         run: |
           if git rev-parse "refs/tags/${version}" >/dev/null 2>&1; then
-            echo "Tag ${version} already exists. Skipping release."
-            echo "SKIP=true" >> $GITHUB_ENV
-            exit 0
+            echo "Tag ${version} was created after the check ran. Nothing to release."
+            exit 1
           fi
-          echo "Tag ${version} doesn't exists. Proceeding with release."
 
       # Only ocm-bot-release may create tags (org ruleset "Tag Creation"). Its token is
       # created only when a release is due, and only for creating the tags.
       - name: Get release bot token
-        if: ${{ env.SKIP != 'true' }}
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
         with:
@@ -84,7 +124,6 @@ jobs:
       # The tags are created through the REST API (annotated tag object, then the
       # refs/tags/<tag> reference). gh reads the token from GH_TOKEN; git never gets it.
       - name: Create Git tags
-        if: ${{ env.SKIP != 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -120,7 +159,6 @@ jobs:
           done
 
       - name: Create GitHub release
-        if: ${{ env.SKIP != 'true' }}
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           tag_name: ${{ env.version }}
@@ -133,7 +171,6 @@ jobs:
   dev_version_pr:
     name: Dev version PR
     needs: release_tag
-    if: ${{ needs.release_tag.outputs.skip != 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/release-dev-version-pr.yaml
@@ -142,5 +179,3 @@ jobs:
     secrets:
       PR_BOT_CLIENT_ID: ${{ secrets.PR_BOT_CLIENT_ID }}
       PR_BOT_PRIVATE_KEY: ${{ secrets.PR_BOT_PRIVATE_KEY }}
-    with:
-      version: ${{ needs.release_tag.outputs.version }}

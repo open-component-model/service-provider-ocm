@@ -1,25 +1,16 @@
 name: Dev Version PR
 
 on:
+  # Both triggers check out the commit to bump: the release commit when called from release.yaml
+  # (a called workflow shares the caller's github context), the selected branch when run by hand.
+  # The version to bump is read from its VERSION file.
   workflow_call:
-    inputs:
-      version:
-        description: "Released version (e.g. v1.2.3). The branch is bumped to <version>-dev."
-        required: false
-        default: ""
-        type: string
     secrets:
       PR_BOT_CLIENT_ID:
         required: true
       PR_BOT_PRIVATE_KEY:
         required: true
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Released version (e.g. v1.2.3). Leave empty to derive from the current VERSION."
-        required: false
-        default: ""
-        type: string
 
 permissions:
   contents: read
@@ -57,13 +48,8 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Change to dev VERSION
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="$INPUT_VERSION"
-          if [[ -z "$VERSION" ]]; then
-            VERSION=$(task version)
-          fi
+          VERSION="$(task version)"
           VERSION="${VERSION%%-dev*}-dev"
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-dev$ ]]; then
             echo "Refusing to run: computed version '$VERSION' is not a valid -dev version"
